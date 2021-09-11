@@ -22,6 +22,7 @@
           type="button"
           class="btn btn-outline-info btn-sm"
           @click="startMic"
+          :disabled="showSuccess"
         >
           Start
         </button>
@@ -33,9 +34,15 @@
           Stop
         </button>
       </div>
+      <div v-show="showSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Connected</strong>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
       <div class="col-md-8">
-        <h3>Output:</h3>
-        <div id="output">Open your browser's console to view the output.</div>
+        <h2><b>Output:</b></h2>
+        <div id="output">{{ message }}</div>
       </div>
     </div>
   </div>
@@ -49,69 +56,75 @@ export default {
   components: {},
   data() {
     return {
+      showSuccess: false,
       counter: 0,
-      stream: null,
+      message: '',
+      messageObject: {},
     };
   },
   methods: {
     countNumber() {
       this.counter += 1;
     },
+    getMessage() {
+      return Object.values(this.messageObject).join(' ');
+    },
     startMic() {
+      this.showSuccess = false;
       console.log("startMic");
       fetch('http://localhost:3000/api/speech-to-text/token')
       .then((response) => {
-        console.log('response', response);
-          return response.text();
+          return response.json();
       }).then((token) => {
-        console.log('token', token);
+        this.showSuccess = true;
+        const options= {
+          // token,
+          ...token,
+          objectMode: true, // send objects instead of text
+          format: false, // optional - performs basic formatting on the results such as capitals an periods
+          wordConfidence: true,
+        };
+        console.log('options', options);
 
-        var stream = recognizeMicrophone(Object.assign(token, {
-            objectMode: true, // send objects instead of text
-            format: false // optional - performs basic formatting on the results such as capitals an periods
-        }));
+        var stream = recognizeMicrophone(options);
+        console.log('stream', stream);
 
         stream.on('data',(data) => {
-          console.log(data);
+          console.log('data', data);
+          console.log('data.result_index', data.result_index);
+          data.results.map(res => {
+            res.alternatives.map(al => {
+              console.log('al.transcript', al.transcript);
+              // this.message = this.message + al.transcript;
+              // avoid duplicate massage
+              this.messageObject[data.result_index] = al.transcript;
+              this.message = this.getMessage();
+            });
+          });
         });
 
         stream.on('error',(err) => {
-            console.log('stream', err);
+            console.log('stream:ERROR', err);
         });
 
       }).catch((error) => {
-          console.log('fetch', error);
+          console.log('fetch:ERROR', error);
       });
     },
     stopMic() {
       console.log("stopMic");
-      // this.stream && this.stream.stop.bind(this.stream);
+      this.startMic.bind(this);
     },
   },
   created() {
-    console.log('Created......Try to to create stram');
-    // this.axios({
-    //   method: "get",
-    //   url: "http://127.0.0.1:3000/users",
-    //   responseType: "arraybuffer",
-    // })
-    //   .then((response) => {
-    //     // console.log('response', response);
-
-    //     var enc = new TextDecoder("utf-8");
-    //     return JSON.parse(enc.decode(response.data));
-    //   })
-    //   .then((res) => {
-    //     console.log("res", res);
-    //     this.users = (res?.data || []).reverse();
-    //   })
-    //   .catch((err) => {
-    //     console.error(err);
-    //   })
-    //   .finally(() => {
-    //     console.log("......... Load data compleated .........");
-    //     this.isLoading = false;
-    //   });
+    console.log('Created......');
   },
 };
 </script>
+
+<style scoped>
+#output {
+  font-style: inherit;
+  font-size: x-large;
+}
+</style>

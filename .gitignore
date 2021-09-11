@@ -3,3 +3,5 @@
 */node_modules/*
 */package-lock.json
 /speech-recognition/server/node_modules/*
+package-lock.json
+*.env

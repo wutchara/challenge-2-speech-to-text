@@ -42,6 +42,13 @@
       </div>
       <div class="col-md-8">
         <h2><b>Output:</b></h2>
+        <button
+          type="button"
+          class="btn btn-outline btn-sm"
+          @click="clearMessage"
+        >
+          Clear Data output
+        </button>
         <div id="output">{{ message }}</div>
       </div>
     </div>
@@ -63,6 +70,10 @@ export default {
     };
   },
   methods: {
+    clearMessage() {
+      this.message = '';
+      this.messageObject = {};
+    },
     countNumber() {
       this.counter += 1;
     },
